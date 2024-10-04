@@ -32,7 +32,7 @@ jobs:
 
       - name: Run tests and measure coverage
         run: |
-          python manage.py test --cov=. --cov-report=xml  # Run all tests with coverage for the entire project
+          pytest --cov=. --cov-report=xml  # Run all tests with coverage for the entire project
           coverage report  # Display coverage report in the console
 
       - name: Check coverage percentage
