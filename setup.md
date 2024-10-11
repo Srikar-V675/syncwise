@@ -1,5 +1,7 @@
 open terminal and execute:
 
+0. install requirements.txt
+
 1. make sure pre-commit is installed by executing the below command
 `pre-commit install`
 2. run docker-compose
