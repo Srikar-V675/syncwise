@@ -59,6 +59,7 @@ class Semester(models.Model):
     num_subjects = models.IntegerField(
         default=0
     )  # defaulted to 0 cause if the number of subjects is not known, it can be updated later
+    current = models.BooleanField(default=False)
 
     def __str__(self):
         return self.sem_number
@@ -83,9 +84,12 @@ class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
     section = models.ForeignKey(Section, on_delete=models.CASCADE)
-    usn = models.CharField(max_length=10)
-    cgpa = models.FloatField()
-    acive = models.BooleanField(default=True)
+    semester = models.ForeignKey(
+        Semester, on_delete=models.CASCADE
+    )  # to indicate the current semester of the student
+    usn = models.CharField(max_length=10, null=True)
+    cgpa = models.FloatField(default=0.0)
+    active = models.BooleanField(default=True)
     num_backlogs = models.IntegerField(default=0)
 
     def __str__(self):
