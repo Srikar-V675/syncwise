@@ -62,7 +62,7 @@ class Semester(models.Model):
     current = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.sem_number
+        return f"Semester {self.sem_number}"
 
     def count_num_subjects(self):
         # This method will be called when the number of subjects in the semester is to be updated
