@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group
 
 from .forms import UserAdminForm
-from .models import Department, User
+from .models import Batch, Department, Section, Semester, Student, User
 
 
 class CustomUserAdmin(BaseUserAdmin):
@@ -105,3 +105,7 @@ class CustomUserAdmin(BaseUserAdmin):
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Department)
+admin.site.register(Batch)
+admin.site.register(Section)
+admin.site.register(Semester)
+admin.site.register(Student)

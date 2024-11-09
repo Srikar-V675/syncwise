@@ -62,7 +62,7 @@ class Semester(models.Model):
     current = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.sem_number
+        return f"Semester {self.sem_number}"
 
     def count_num_subjects(self):
         # This method will be called when the number of subjects in the semester is to be updated
@@ -87,7 +87,7 @@ class Student(models.Model):
     semester = models.ForeignKey(
         Semester, on_delete=models.CASCADE
     )  # to indicate the current semester of the student
-    usn = models.CharField(max_length=10, null=True)
+    usn = models.CharField(max_length=10, default="-", null=True)
     cgpa = models.FloatField(default=0.0)
     active = models.BooleanField(default=True)
     num_backlogs = models.IntegerField(default=0)
