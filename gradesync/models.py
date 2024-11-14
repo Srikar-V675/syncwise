@@ -39,6 +39,8 @@ class Batch(models.Model):
 
 class Section(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
+    # assign class teacher to the section. one teacher can be assigned to multiple sections
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     section_name = models.CharField(max_length=1)  # A, B, C, etc.
     num_students = models.IntegerField(
         default=0

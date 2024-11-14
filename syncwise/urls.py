@@ -4,12 +4,23 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from gradesync.views import StudentViewSet, UserViewSet
+from gradesync.views import (
+    BatchViewSet,
+    DepartmentViewSet,
+    SectionViewSet,
+    SemesterViewSet,
+    StudentViewSet,
+    UserViewSet,
+)
 
 # Create a router and register our viewset with it.
 router = DefaultRouter()
 router.register(r"users", UserViewSet, basename="user")
 router.register(r"students", StudentViewSet, basename="student")
+router.register(r"departments", DepartmentViewSet, basename="department")
+router.register(r"batches", BatchViewSet, basename="batch")
+router.register(r"sections", SectionViewSet, basename="section")
+router.register(r"semesters", SemesterViewSet, basename="semester")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
