@@ -1,0 +1,9 @@
+1. push the code for today
+2. react setup file before merging
+3.the 4 if approach{
+    if no acc
+    if access is expired
+    if both expired
+    new login
+}
+before pushing chec whaat to do

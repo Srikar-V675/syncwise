@@ -1,7 +1,7 @@
 open terminal and execute:
 
 0. install requirements.txt inside the environment
-`pip install -r requirements.txt`
+`pip install -r requirements.txt
 1. make sure pre-commit is installed by executing the below command
 `pre-commit install`
 2. perform the migrations
@@ -21,3 +21,25 @@ type `http://localhost:8050/` in browser.
 > **NOTE:** Make sure you get all pre-commit tests passed after you commit, if not then make the changes and use `git add .` to add the modified files again and commit it. Refer to the below commit for succesful and failed pre-commits.
 > ![succesful](image.png)
 > ![failed](image-1.png)
+
+
+React Part:
+
+1. Install Node.js and npm
+Ensure Node.js and npm are installed. Verify with:
+'node -v'
+'npm -v'
+
+Install Axios to interact with the Django API:
+'npm install axios'
+
+library is used to handle Cross-Origin Resource Sharing (CORS) in Django applications
+'pip install django-cors-headers'
+
+2. Navigate to your project directory and create a React app
+3. Run the following to start the React app:
+
+'npm start'
+
+    'The app will be available at http://localhost:3000.'
+    'The src/ folder contains the main React code. Modify src/App.js for your needs.'

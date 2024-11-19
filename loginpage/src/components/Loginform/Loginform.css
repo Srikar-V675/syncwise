@@ -1,0 +1,88 @@
+/* Wrapper styling */
+.wrapper {
+    width: 420px;
+    background:transparent;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(30px);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    color: #fff;
+    padding: 20px; /* Added padding for inner spacing */
+    box-sizing: border-box; /* Ensure padding is included in width */
+}
+
+.wrapper h1 {
+    font-size: 36px;
+    text-align: center;
+    margin-bottom: 30px; /* Space below the heading */
+}
+
+.input-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Controls the space between input-box elements */
+}
+
+.input-box {
+    width: 100%;
+    padding: 10px; /* Inner padding for the input-box */
+    border-radius: 10px; /* Rounded corners for the input-box */
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.input-box input {
+    width: 100%;
+    padding: 10px 20px;
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    font-size: 16px;
+    color: #fff;
+    border-radius: 25px;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.input-box input::placeholder {
+    color: #fff;
+    font-size: 14px;
+}
+
+/* Styling for Remember Me and Forgot Password section */
+.wrapper .remember-forget {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14.5px;
+    margin: 15px 0 15px;
+}
+.input-box:nth-child(2) { /* Assuming the second .input-box is for password */
+    margin-bottom: 20px;
+}
+
+.remember-forget label input {
+    accent-color: #fff;
+    margin-right: 4px;
+}
+
+.remember-forget a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.remember-forget a:hover {
+    text-decoration: underline;
+}
+
+/* Button styling */
+.wrapper button {
+    width: 100%;
+    height: 45px;
+    background: #fff;
+    border: none;
+    outline: none;
+    border-radius: 40px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Corrected box shadow */
+    font-size: 16px;
+    color: #333;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 20px 0 15px;
+}

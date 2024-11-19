@@ -46,6 +46,13 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "drf_spectacular",
+    "corsheaders",
+]
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React app's URL
+    "http://127.0.0.1:3000",
 ]
 
 
@@ -64,6 +71,7 @@ SIMPLE_JWT = {
 
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",

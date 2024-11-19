@@ -15,7 +15,7 @@ class CustomUserAdmin(BaseUserAdmin):
         (None, {"fields": ("username", "password")}),
         (
             "Personal info",
-            {"fields": ("first_name", "last_name", "email", "department")},
+            {"fields": ("first_name", "last_name", "Username", "department")},
         ),
         (
             "Permissions",
@@ -38,7 +38,7 @@ class CustomUserAdmin(BaseUserAdmin):
         (None, {"fields": ("username", "password1", "password2")}),
         (
             "Personal info",
-            {"fields": ("first_name", "last_name", "email", "department")},
+            {"fields": ("first_name", "last_name", "Username", "department")},
         ),
         (
             "Permissions",
