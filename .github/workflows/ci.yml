@@ -28,6 +28,7 @@ jobs:
 
       - name: Run migrations
         run: |
+          python manage.py makemigrations --merge
           python manage.py migrate  # Apply database migrations
 
       - name: Run tests and measure coverage
