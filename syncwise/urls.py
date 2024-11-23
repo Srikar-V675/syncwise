@@ -9,6 +9,7 @@ from gradesync.views import (
     DepartmentViewSet,
     SectionViewSet,
     SemesterViewSet,
+    StudentBulkUploadView,
     StudentViewSet,
     UserViewSet,
 )
@@ -33,4 +34,5 @@ urlpatterns = [
         SpectacularSwaggerView.as_view(),
         name="swagger-ui",
     ),
+    path("api/upload/", StudentBulkUploadView.as_view(), name="student-upload"),
 ]
