@@ -1,3 +1,4 @@
+from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -37,8 +38,21 @@ class Batch(models.Model):
         pass
 
 
+class BatchAdmin(admin.ModelAdmin):
+    list_display = (
+        "batch_name",
+        "dept",
+        "scheme",
+        "num_students",
+        "batch_start_year",
+        "batch_end_year",
+    )
+
+
 class Section(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
+    # assign class teacher to the section. one teacher can be assigned to multiple sections
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     section_name = models.CharField(max_length=1)  # A, B, C, etc.
     num_students = models.IntegerField(
         default=0
@@ -51,6 +65,10 @@ class Section(models.Model):
         # This method will be called when the number of students in the section is to be updated
         # It will count the number of students in the section and update the num_students field
         pass
+
+
+class SectionAdmin(admin.ModelAdmin):
+    list_display = ("batch", "section_name", "teacher", "num_students")
 
 
 class Semester(models.Model):
@@ -68,6 +86,10 @@ class Semester(models.Model):
         # This method will be called when the number of subjects in the semester is to be updated
         # It will count the number of subjects in the semester and update the num_subjects field
         pass
+
+
+class SemesterAdmin(admin.ModelAdmin):
+    list_display = ("batch", "sem_number", "num_subjects", "current")
 
 
 class Subject(models.Model):
@@ -99,6 +121,19 @@ class Student(models.Model):
         # This method will be called when the number of backlogs of the student is to be updated
         # It will count the number of backlogs of the student and update the num_backlogs field
         pass
+
+
+class StudentAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "usn",
+        "batch",
+        "section",
+        "semester",
+        "cgpa",
+        "active",
+        "num_backlogs",
+    )
 
 
 # Faculty model is not yet implemented. I'm unsure if it is needed or not.
