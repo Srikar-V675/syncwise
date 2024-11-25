@@ -8,3 +8,10 @@ services:
       - .:/app
     ports:
       - "8050:8050"
+
+
+  redis:
+    container_name: redis
+    image: redis:alpine
+    ports:
+      - 6379:6379
