@@ -1,17 +1,27 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: python manage.py runserver 0.0.0.0:8050
     volumes:
       - .:/app
     ports:
       - "8050:8050"
 
+  react:
+    build:
+      context: ./frontend  
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app  # Optional: for hot-reloading during development
 
   redis:
     container_name: redis
     image: redis:alpine
     ports:
-      - 6379:6379
+      - "6379:6379"
