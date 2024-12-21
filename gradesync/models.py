@@ -143,15 +143,11 @@ class Faculty(models.Model):
 
 class Score(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
-    internal_marks = models.FloatField()
-    external_marks = models.FloatField()
-    total_marks = models.FloatField()
-    result = models.CharField(max_length=1)
-    grade = models.CharField(max_length=2)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    marks = models.JSONField()
 
     def __str__(self):
-        return self.student.user.username + " - " + self.subject.sub_name
+        return self.student.user.username + " - " + self.semester.sem_number
 
     def calculate_grade(self):
         # This method will be called when the grade of the student in the subject is to be calculated

@@ -13,12 +13,13 @@ services:
 
   react:
     build:
-      context: ./frontend  
+      context: ./frontend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/app  # Optional: for hot-reloading during development
+      - /app/node_modules
 
   redis:
     container_name: redis
