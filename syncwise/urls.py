@@ -5,12 +5,17 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from gradesync.views import (
+    BatchComputePerformanceView,
     BatchViewSet,
     DepartmentViewSet,
+    FetchScrapingProgressView,
+    IdentifySubjectsView,
+    ScrapeBatchView,
     SectionViewSet,
     SemesterViewSet,
     StudentBulkUploadView,
     StudentViewSet,
+    SubjectViewSet,
     UserViewSet,
 )
 
@@ -22,6 +27,7 @@ router.register(r"departments", DepartmentViewSet, basename="department")
 router.register(r"batches", BatchViewSet, basename="batch")
 router.register(r"sections", SectionViewSet, basename="section")
 router.register(r"semesters", SemesterViewSet, basename="semester")
+router.register(r"subjects", SubjectViewSet, basename="subject")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -35,4 +41,16 @@ urlpatterns = [
         name="swagger-ui",
     ),
     path("api/upload/", StudentBulkUploadView.as_view(), name="student-upload"),
+    path("api/identify/", IdentifySubjectsView.as_view(), name="identify-subjects"),
+    path("api/scrape/batch/", ScrapeBatchView.as_view(), name="scrape-batch"),
+    path(
+        "api/scrape/progress/<str:redis_name>/",
+        FetchScrapingProgressView.as_view(),
+        name="scraping-progress",
+    ),
+    path(
+        "api/scrape/performance/",
+        BatchComputePerformanceView.as_view(),
+        name="compute-performance",
+    ),
 ]

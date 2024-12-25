@@ -3,14 +3,21 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Batch, Department, Section, Semester, Student, User
+from utils.redis_conn import get_scraping_info
+
+from .models import Batch, Department, Section, Semester, Student, Subject, User
 from .serializers import (
+    BatchComputePerformanceSerializer,
     BatchSerializer,
+    BatchSubjectSerializer,
     DepartmentSerializer,
+    IdentifySubjectsSerializer,
+    ScrapeBatchSerializer,
     SectionSerializer,
     SemesterSerializer,
     StudentBulkUploadSeializer,
     StudentSerializer,
+    SubjectSerializer,
     UserSerializer,
 )
 
@@ -35,6 +42,80 @@ class StudentViewSet(viewsets.ModelViewSet):
         return Student.objects.filter(section__in=sections)
 
 
+class IdentifySubjectsView(APIView):
+    serializer_class = IdentifySubjectsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.serializer_class(
+            data=request.data,
+        )
+
+        if serializer.is_valid():
+            subjects = serializer.save()
+
+            return Response(
+                subjects,
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ScrapeBatchView(APIView):
+    serializer_class = ScrapeBatchSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = self.serializer_class(
+            data=request.data,
+        )
+
+        if serializer.is_valid():
+            return Response(
+                serializer.save(),
+                status=status.HTTP_201_CREATED,
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FetchScrapingProgressView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        redis_name = kwargs.get("redis_name")
+
+        if not redis_name:
+            return Response(
+                {"error": "Redis hash name not provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        details = get_scraping_info(name=redis_name)
+
+        if not details:
+            return Response(
+                {"error": "No scraping details found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response({"details": details})
+
+
+class BatchComputePerformanceView(APIView):
+    serializer_class = BatchComputePerformanceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serialzer = self.serializer_class(data=request.data)
+
+        if serialzer.is_valid():
+            return Response(serialzer.save(), status=status.HTTP_201_CREATED)
+
+        return Response(serialzer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class StudentBulkUploadView(APIView):
     serializer_class = StudentBulkUploadSeializer
     permission_classes = [IsAuthenticated]
@@ -55,6 +136,22 @@ class StudentBulkUploadView(APIView):
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubjectViewSet(viewsets.ModelViewSet):
+    queryset = Subject.objects.all()
+    serializer_class = SubjectSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        if isinstance(request.data, list):
+            serializer = BatchSubjectSerializer(data=request.data, many=True)
+        else:
+            serializer = self.get_serializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class SectionViewSet(viewsets.ModelViewSet):
