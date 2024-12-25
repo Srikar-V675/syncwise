@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -102,6 +104,10 @@ class Subject(models.Model):
         return self.sub_name
 
 
+class SubjectAdmin(admin.ModelAdmin):
+    list_display = ("sem", "sub_name", "sub_code", "credits")
+
+
 class Student(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
@@ -147,7 +153,7 @@ class Score(models.Model):
     marks = models.JSONField()
 
     def __str__(self):
-        return self.student.user.username + " - " + self.semester.sem_number
+        return self.student.user.username + " - " + str(self.semester.sem_number)
 
     def calculate_grade(self):
         # This method will be called when the grade of the student in the subject is to be calculated
@@ -159,20 +165,59 @@ class Score(models.Model):
         # It will calculate the cgpa of the student and update the cgpa field
         pass
 
+    def calculate_total(self):
+        total = sum([int(subject["TOT"]) for subject in json.loads(self.marks)])
+        return total
+
     def calculate_sgpa(self):
         # This method will be called when the sgpa of the student is to be calculated
-        # It will calculate the sgpa of the student and update the sgpa field
-        pass
+        totals, credits = [], []
+        for subject in json.loads(self.marks):
+            totals.append(int(subject["TOT"]))
+            credit = Subject.objects.get(sub_code=subject["Subject Code"]).credits
+            credits.append(credit)
 
-    def calculate_percentage(self):
+        sgpa = 0  # Initialize SGPA
+        sum_credits = 0  # Initialize total credits
+
+        # Iterate over total marks and credits simultaneously
+        for total, credit in zip(totals, credits):
+            sum_credits += credit  # Accumulate total credits
+
+            # Determine grade points based on total marks
+            if total >= 90:
+                sgpa += 10 * credit
+            elif total >= 80:
+                sgpa += 9 * credit
+            elif total >= 70:
+                sgpa += 8 * credit
+            elif total >= 60:
+                sgpa += 7 * credit
+            elif total >= 50:
+                sgpa += 6 * credit
+            elif total >= 40:
+                sgpa += 5 * credit
+            else:
+                sgpa += 0  # No grade points for failing grades
+
+        # Calculate SGPA by dividing total grade points by total credits
+        sgpa = sgpa / sum_credits
+
+        return round(sgpa, 2)
+
+    def calculate_percentage(self, total):
         # This method will be called when the percentage of the student is to be calculated
-        # It will calculate the percentage of the student and update the percentage field
-        pass
+        percentage = total / (len(json.loads(self.marks)) * 100) * 100
+        return round(percentage, 2)
 
     def calculate_result(self):
         # This method will be called when the result of the student is to be calculated
         # It will calculate the result of the student and update the result field
         pass
+
+
+class ScoreAdmin(admin.ModelAdmin):
+    list_display = ("student", "semester", "marks")
 
 
 class StudentPerformance(models.Model):
@@ -184,7 +229,7 @@ class StudentPerformance(models.Model):
     # add more fields if needed based on info in dashboards
 
     def __str__(self):
-        return self.student.user.username + " - " + self.semester.sem_number
+        return self.student.user.username + " - " + str(self.semester.sem_number)
 
     def calculate_sgpa(self):
         # This method will be called when the sgpa of the student is to be calculated
@@ -200,3 +245,7 @@ class StudentPerformance(models.Model):
         # This method will be called when the result of the student is to be calculated
         # It will calculate the result of the student and update the result field
         pass
+
+
+class StudentPerformanceAdmin(admin.ModelAdmin):
+    list_display = ("student", "semester", "total", "percentage", "sgpa")

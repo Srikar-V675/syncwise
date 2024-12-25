@@ -7,12 +7,18 @@ from .models import (
     Batch,
     BatchAdmin,
     Department,
+    Score,
+    ScoreAdmin,
     Section,
     SectionAdmin,
     Semester,
     SemesterAdmin,
     Student,
     StudentAdmin,
+    StudentPerformance,
+    StudentPerformanceAdmin,
+    Subject,
+    SubjectAdmin,
     User,
 )
 
@@ -120,3 +126,6 @@ admin.site.register(Batch, BatchAdmin)
 admin.site.register(Section, SectionAdmin)
 admin.site.register(Semester, SemesterAdmin)
 admin.site.register(Student, StudentAdmin)
+admin.site.register(Subject, SubjectAdmin)
+admin.site.register(Score, ScoreAdmin)
+admin.site.register(StudentPerformance, StudentPerformanceAdmin)
