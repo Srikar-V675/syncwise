@@ -72,6 +72,18 @@ class SemesterSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class ScoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Score
+        fields = "__all__"
+
+
+class StudentPerformanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudentPerformance
+        fields = "__all__"
+
+
 class SubjectSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subject

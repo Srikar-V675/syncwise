@@ -5,17 +5,29 @@ from rest_framework.views import APIView
 
 from utils.redis_conn import get_scraping_info
 
-from .models import Batch, Department, Section, Semester, Student, Subject, User
+from .models import (
+    Batch,
+    Department,
+    Score,
+    Section,
+    Semester,
+    Student,
+    StudentPerformance,
+    Subject,
+    User,
+)
 from .serializers import (
     BatchComputePerformanceSerializer,
     BatchSerializer,
     BatchSubjectSerializer,
     DepartmentSerializer,
     IdentifySubjectsSerializer,
+    ScoreSerializer,
     ScrapeBatchSerializer,
     SectionSerializer,
     SemesterSerializer,
     StudentBulkUploadSeializer,
+    StudentPerformanceSerializer,
     StudentSerializer,
     SubjectSerializer,
     UserSerializer,
@@ -56,7 +68,7 @@ class IdentifySubjectsView(APIView):
 
             return Response(
                 subjects,
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK,
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -74,7 +86,7 @@ class ScrapeBatchView(APIView):
         if serializer.is_valid():
             return Response(
                 serializer.save(),
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK,
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -83,7 +95,7 @@ class ScrapeBatchView(APIView):
 class FetchScrapingProgressView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         redis_name = kwargs.get("redis_name")
 
         if not redis_name:
@@ -111,7 +123,7 @@ class BatchComputePerformanceView(APIView):
         serialzer = self.serializer_class(data=request.data)
 
         if serialzer.is_valid():
-            return Response(serialzer.save(), status=status.HTTP_201_CREATED)
+            return Response(serialzer.save(), status=status.HTTP_200_OK)
 
         return Response(serialzer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -132,7 +144,7 @@ class StudentBulkUploadView(APIView):
                 {
                     "message": "Students uploaded successfully",
                 },
-                status=status.HTTP_201_CREATED,
+                status=status.HTTP_200_OK,
             )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -175,4 +187,16 @@ class DepartmentViewSet(viewsets.ModelViewSet):
 class BatchViewSet(viewsets.ModelViewSet):
     serializer_class = BatchSerializer
     queryset = Batch.objects.all()
+    permission_classes = [IsAuthenticated]
+
+
+class ScoreViewSet(viewsets.ModelViewSet):
+    serializer_class = ScoreSerializer
+    queryset = Score.objects.all()
+    permission_classes = [IsAuthenticated]
+
+
+class StudentPerformanceViewSet(viewsets.ModelViewSet):
+    serializer_class = StudentPerformanceSerializer
+    queryset = StudentPerformance.objects.all()
     permission_classes = [IsAuthenticated]

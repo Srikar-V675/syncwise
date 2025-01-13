@@ -212,7 +212,6 @@ class Score(models.Model):
 
     def calculate_result(self):
         # This method will be called when the result of the student is to be calculated
-        # It will calculate the result of the student and update the result field
         pass
 
 
