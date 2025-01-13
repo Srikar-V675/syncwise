@@ -10,10 +10,12 @@ from gradesync.views import (
     DepartmentViewSet,
     FetchScrapingProgressView,
     IdentifySubjectsView,
+    ScoreViewSet,
     ScrapeBatchView,
     SectionViewSet,
     SemesterViewSet,
     StudentBulkUploadView,
+    StudentPerformanceViewSet,
     StudentViewSet,
     SubjectViewSet,
     UserViewSet,
@@ -28,6 +30,11 @@ router.register(r"batches", BatchViewSet, basename="batch")
 router.register(r"sections", SectionViewSet, basename="section")
 router.register(r"semesters", SemesterViewSet, basename="semester")
 router.register(r"subjects", SubjectViewSet, basename="subject")
+router.register(r"scores", ScoreViewSet, basename="score")
+router.register(
+    r"student-performances", StudentPerformanceViewSet, basename="student-performance"
+)
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
