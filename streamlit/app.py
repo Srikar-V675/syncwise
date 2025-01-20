@@ -139,9 +139,9 @@ def scrape_batch_results():
         data = {"batch": batch, "semester": semester, "result_url": result_url}
         response = make_api_request("scrape/batch/", method="POST", data=data)
         if response:
-            redis_name = response.get("redis_name")
-            st.session_state["scraping_in_progress"] = redis_name
-            st.write(f"Scraping task started. Tracking ID: {redis_name}")
+            redis_names = response.get("redis_name")
+            st.session_state["scraping_in_progress"] = redis_names
+            st.write(f"Scraping task started. Tracking ID: {redis_names}")
         else:
             st.error("Failed to start scraping.")
 
@@ -153,9 +153,9 @@ def scrape_batch_results():
 # Page 5: Track Scraping Progress
 def track_scraping_progress():
     st.title("Track Scraping Progress")
-    redis_name = st.session_state.get("scraping_in_progress", None)
+    redis_names = st.session_state.get("scraping_in_progress", None)
 
-    if redis_name:
+    for redis_name in redis_names:
         progress_bar = st.progress(0)
 
         while True:
