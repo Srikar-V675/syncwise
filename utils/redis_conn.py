@@ -31,6 +31,7 @@ def init_scraping_redis_key(total: int):
     redis_client = RedisClient().get_connection
     mapping = {"progress": 0, "total": total, "errors": json.dumps([])}
     redis_client.hset(name=name, mapping=mapping)
+    redis_client.expire(name=name, time=10800)  # expiry in 3 hrs
 
     return name
 

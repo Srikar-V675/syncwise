@@ -17,8 +17,9 @@ def scrape_bg_task(semester, students, redis_name, result_url):
         for stud in students:
             usn = stud.usn
             score, code = scrape_student(usn, result_url)
-            score = json.loads(score)["Marks"]
+            # score = json.loads(score)["Marks"]
             if not check_and_append_error(usn=usn, errors=errors, code=code):
+                score = json.loads(score)["Marks"]
                 scores.append(
                     Score(student=stud, semester=semester, marks=json.dumps(score))
                 )
@@ -49,6 +50,7 @@ def check_error(code):
 
 
 def append_error(usn, errors, code):
+    print(f"Error: {usn} -> {status_code_str(code)}", flush=True)
     errors.append(
         {
             "usn": usn,

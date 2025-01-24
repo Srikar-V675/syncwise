@@ -93,7 +93,12 @@ class SubjectSerializer(serializers.ModelSerializer):
 class SubjectListSerializer(serializers.ListSerializer):
     def create(self, validated_data):
         # perform batch operation
-        return Subject.objects.bulk_create([Subject(**item) for item in validated_data])
+        subjects = Subject.objects.bulk_create(
+            [Subject(**item) for item in validated_data]
+        )
+        sem = subjects[0].sem
+        sem.count_num_subjects()
+        return subjects
 
     # TODO: Implement below method in future
     def update(self, validated_data):
@@ -145,24 +150,32 @@ class ScrapeBatchSerializer(serializers.Serializer):
 
             check_url(url=result_url)
 
-            students = Student.objects.filter(batch=batch)
+            sections = Section.objects.filter(batch=batch)
 
-            redis_name = init_scraping_redis_key(total=len(students))
+            # students = Student.objects.filter(batch=batch)
 
-            thread = threading.Thread(
-                target=scrape_bg_task,
-                args=(
-                    semester,
-                    students,
-                    redis_name,
-                    result_url,
-                ),
-            )
-            thread.start()
+            # redis_name = init_scraping_redis_key(total=len(students))
+
+            redis_names = []
+            for section in sections:
+                students = Student.objects.filter(section=section)
+                redis_name = init_scraping_redis_key(total=len(students))
+                redis_names.append(redis_name)
+
+                thread = threading.Thread(
+                    target=scrape_bg_task,
+                    args=(
+                        semester,
+                        students,
+                        redis_name,
+                        result_url,
+                    ),
+                )
+                thread.start()
 
             return {
                 "message": "Scraping background task has started.",
-                "redis_name": redis_name,
+                "redis_names": redis_names,
             }
         except Exception as e:
             return {"error": str(e)}
@@ -255,6 +268,7 @@ class StudentBulkUploadSeializer(serializers.Serializer):
                     batch=batch,
                     section=section,
                     semester=semester,
+                    usn=row["usn"],
                 )
                 students.append(student)
         except Exception as e:
@@ -270,5 +284,8 @@ class StudentBulkUploadSeializer(serializers.Serializer):
         if not students:
             raise serializers.ValidationError("No valid data found in the file")
         Student.objects.bulk_create(students)
+
+        section.count_num_students()
+        batch.count_num_students()
 
         return students
