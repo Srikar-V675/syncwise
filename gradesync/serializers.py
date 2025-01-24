@@ -93,7 +93,12 @@ class SubjectSerializer(serializers.ModelSerializer):
 class SubjectListSerializer(serializers.ListSerializer):
     def create(self, validated_data):
         # perform batch operation
-        return Subject.objects.bulk_create([Subject(**item) for item in validated_data])
+        subjects = Subject.objects.bulk_create(
+            [Subject(**item) for item in validated_data]
+        )
+        sem = subjects[0].sem
+        sem.count_num_subjects()
+        return subjects
 
     # TODO: Implement below method in future
     def update(self, validated_data):
@@ -279,5 +284,8 @@ class StudentBulkUploadSeializer(serializers.Serializer):
         if not students:
             raise serializers.ValidationError("No valid data found in the file")
         Student.objects.bulk_create(students)
+
+        section.count_num_students()
+        batch.count_num_students()
 
         return students

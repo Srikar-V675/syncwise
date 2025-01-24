@@ -3,6 +3,7 @@ import json
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Avg, Sum
 
 
 class Department(models.Model):
@@ -35,9 +36,12 @@ class Batch(models.Model):
         return self.batch_name
 
     def count_num_students(self):
-        # This method will be called when the number of students in the batch is to be updated
         # It will count the number of students in the batch and update the num_students field
-        pass
+        total_students = Section.objects.filter(batch=self).aggregate(
+            total=Sum("num_students")
+        )["total"]
+        self.num_students = total_students or 0
+        self.save()
 
 
 class BatchAdmin(admin.ModelAdmin):
@@ -64,9 +68,9 @@ class Section(models.Model):
         return self.section_name
 
     def count_num_students(self):
-        # This method will be called when the number of students in the section is to be updated
         # It will count the number of students in the section and update the num_students field
-        pass
+        self.num_students = Student.objects.filter(section=self).count()
+        self.save()
 
 
 class SectionAdmin(admin.ModelAdmin):
@@ -85,9 +89,9 @@ class Semester(models.Model):
         return f"Semester {self.sem_number}"
 
     def count_num_subjects(self):
-        # This method will be called when the number of subjects in the semester is to be updated
         # It will count the number of subjects in the semester and update the num_subjects field
-        pass
+        self.num_subjects = Subject.objects.filter(sem=self).count()
+        self.save()
 
 
 class SemesterAdmin(admin.ModelAdmin):
@@ -122,6 +126,13 @@ class Student(models.Model):
 
     def __str__(self):
         return self.user.username
+
+    def calculate_cgpa(self):
+        cgpa = StudentPerformance.objects.filter(student=self).aggregate(
+            average=Avg("sgpa")
+        )["average"]
+        self.cgpa = cgpa or 0.0
+        self.save()
 
     def count_num_backlogs(self):
         # This method will be called when the number of backlogs of the student is to be updated

@@ -9,6 +9,8 @@ class GradesyncConfig(AppConfig):
     name = "gradesync"
 
     def ready(self):
+        import gradesync.signals  # noqa
+
         redis_client = RedisClient()
         try:
             redis_client.get_connection.ping()
