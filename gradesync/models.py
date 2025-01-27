@@ -1,5 +1,3 @@
-import json
-
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -135,9 +133,12 @@ class Student(models.Model):
         self.save()
 
     def count_num_backlogs(self):
-        # This method will be called when the number of backlogs of the student is to be updated
         # It will count the number of backlogs of the student and update the num_backlogs field
-        pass
+        # grade Fail or Absent is considered as backlog
+        self.num_backlogs = Score.objects.filter(
+            student=self, grade__in=["F", "A"]
+        ).count()
+        self.save()
 
 
 class StudentAdmin(admin.ModelAdmin):
@@ -161,100 +162,276 @@ class Faculty(models.Model):
 class Score(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
-    marks = models.JSONField()
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    internal = models.IntegerField()
+    external = models.IntegerField()
+    total = models.IntegerField()
+    grade = models.CharField(max_length=3)
 
     def __str__(self):
-        return self.student.user.username + " - " + str(self.semester.sem_number)
-
-    def calculate_grade(self):
-        # This method will be called when the grade of the student in the subject is to be calculated
-        # It will calculate the grade of the student in the subject and update the grade field
-        pass
-
-    def calculate_cgpa(self):
-        # This method will be called when the cgpa of the student is to be calculated
-        # It will calculate the cgpa of the student and update the cgpa field
-        pass
-
-    def calculate_total(self):
-        total = sum([int(subject["TOT"]) for subject in json.loads(self.marks)])
-        return total
-
-    def calculate_sgpa(self):
-        # This method will be called when the sgpa of the student is to be calculated
-        totals, credits = [], []
-        for subject in json.loads(self.marks):
-            totals.append(int(subject["TOT"]))
-            credit = Subject.objects.get(sub_code=subject["Subject Code"]).credits
-            credits.append(credit)
-
-        sgpa = 0  # Initialize SGPA
-        sum_credits = 0  # Initialize total credits
-
-        # Iterate over total marks and credits simultaneously
-        for total, credit in zip(totals, credits):
-            sum_credits += credit  # Accumulate total credits
-
-            # Determine grade points based on total marks
-            if total >= 90:
-                sgpa += 10 * credit
-            elif total >= 80:
-                sgpa += 9 * credit
-            elif total >= 70:
-                sgpa += 8 * credit
-            elif total >= 60:
-                sgpa += 7 * credit
-            elif total >= 50:
-                sgpa += 6 * credit
-            elif total >= 40:
-                sgpa += 5 * credit
-            else:
-                sgpa += 0  # No grade points for failing grades
-
-        # Calculate SGPA by dividing total grade points by total credits
-        sgpa = sgpa / sum_credits
-
-        return round(sgpa, 2)
-
-    def calculate_percentage(self, total):
-        # This method will be called when the percentage of the student is to be calculated
-        percentage = total / (len(json.loads(self.marks)) * 100) * 100
-        return round(percentage, 2)
-
-    def calculate_result(self):
-        # This method will be called when the result of the student is to be calculated
-        pass
+        return (
+            self.student.user.username
+            + " - "
+            + str(self.semester.sem_number)
+            + " - "
+            + self.subject.sub_name
+        )
 
 
 class ScoreAdmin(admin.ModelAdmin):
-    list_display = ("student", "semester", "marks")
+    list_display = (
+        "student",
+        "semester",
+        "subject",
+        "internal",
+        "external",
+        "total",
+        "grade",
+    )
+
+
+class SubjectMetrics(models.Model):
+    section = models.ForeignKey(Section, on_delete=models.CASCADE)
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+
+    avg_score = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    num_backlogs = models.IntegerField(default=0)
+    pass_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    fail_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    absent_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    fcd_count = models.IntegerField(default=0)
+    fc_count = models.IntegerField(default=0)
+    sc_count = models.IntegerField(default=0)
+    fail_count = models.IntegerField(default=0)
+    absent_count = models.IntegerField(default=0)
+    highest_score = models.IntegerField(default=0)
+    highest_scorer = models.ForeignKey(
+        Student,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="highest_scorer",
+    )
+
+    def __str__(self):
+        return (
+            self.section.section_name
+            + " - "
+            + self.subject.sub_name
+            + " - "
+            + str(self.semester.sem_number)
+        )
+
+    def _calculate_counts(self, scores):
+        (
+            total_score,
+            num_backlogs,
+            fcd_count,
+            fc_count,
+            sc_count,
+            fail_count,
+            absent_count,
+            highest_score,
+        ) = (0, 0, 0, 0, 0, 0, 0, 0)
+        highest_scorer = None
+
+        for score in scores:
+            total_score += score.total
+            if score.total > highest_score:
+                highest_score = score.total
+                highest_scorer = score.student
+
+            grade = score.grade
+            if grade == "FCD":
+                fcd_count += 1
+            elif grade == "FC":
+                fc_count += 1
+            elif grade == "SC":
+                sc_count += 1
+            elif grade == "F":
+                fail_count += 1
+                num_backlogs += 1
+            elif grade == "A":
+                absent_count += 1
+                num_backlogs += 1
+
+        return (
+            total_score,
+            num_backlogs,
+            fcd_count,
+            fc_count,
+            sc_count,
+            fail_count,
+            absent_count,
+            highest_score,
+            highest_scorer,
+        )
+
+    def _update_metrics(
+        self,
+        total_students,
+        total_score,
+        num_backlogs,
+        fcd_count,
+        fc_count,
+        sc_count,
+        fail_count,
+        absent_count,
+        highest_score,
+        highest_scorer,
+    ):
+        self.num_backlogs = num_backlogs
+        self.avg_score = (
+            round(total_score / total_students, 2) if total_students > 0 else 0
+        )
+        self.pass_percentage = (
+            round((fcd_count + fc_count + sc_count) / total_students * 100, 2)
+            if total_students > 0
+            else 0
+        )
+        self.fail_percentage = (
+            round(fail_count / total_students * 100, 2) if total_students > 0 else 0
+        )
+        self.absent_percentage = (
+            round(absent_count / total_students * 100, 2) if total_students > 0 else 0
+        )
+        self.fcd_count = fcd_count
+        self.fc_count = fc_count
+        self.sc_count = sc_count
+        self.fail_count = fail_count
+        self.absent_count = absent_count
+        self.highest_score = highest_score
+        self.highest_scorer = highest_scorer
+
+        self.save()
+
+    def calculate_metrics(self):
+        scores = Score.objects.filter(
+            subject=self.subject, semester=self.semester, student__section=self.section
+        )
+
+        total_students = self.section.num_students
+        if total_students == 0:
+            return
+
+        (
+            total_score,
+            num_backlogs,
+            fcd_count,
+            fc_count,
+            sc_count,
+            fail_count,
+            absent_count,
+            highest_score,
+            highest_scorer,
+        ) = self._calculate_counts(scores=scores)
+
+        self._update_metrics(
+            total_students=total_students,
+            total_score=total_score,
+            num_backlogs=num_backlogs,
+            fcd_count=fcd_count,
+            fc_count=fc_count,
+            sc_count=sc_count,
+            fail_count=fail_count,
+            absent_count=absent_count,
+            highest_score=highest_score,
+            highest_scorer=highest_scorer,
+        )
+
+
+class SubjectMetricsAdmin(admin.ModelAdmin):
+    list_display = (
+        "section",
+        "subject",
+        "semester",
+        "avg_score",
+        "num_backlogs",
+        "pass_percentage",
+        "fail_percentage",
+        "absent_percentage",
+        "fcd_count",
+        "fc_count",
+        "sc_count",
+        "fail_count",
+        "absent_count",
+        "highest_score",
+        "highest_scorer",
+    )
 
 
 class StudentPerformance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
-    total = models.IntegerField()
-    percentage = models.FloatField()
-    sgpa = models.FloatField()
+    total = models.IntegerField(default=0)
+    percentage = models.FloatField(default=0.0)
+    sgpa = models.FloatField(default=0.0)
     # add more fields if needed based on info in dashboards
 
     def __str__(self):
         return self.student.user.username + " - " + str(self.semester.sem_number)
 
-    def calculate_sgpa(self):
-        # This method will be called when the sgpa of the student is to be calculated
-        # It will calculate the sgpa of the student and update the sgpa field
-        pass
+    def _calculate_metrics(self, scores):
+        """
+        Loops through scores once to calculate:
+        - Total marks
+        - SGPA
+        - Total credits
+        """
+        total = 0
+        sgpa = 0
+        total_credits = 0
 
-    def calculate_percentage(self):
-        # This method will be called when the percentage of the student is to be calculated
-        # It will calculate the percentage of the student and update the percentage field
-        pass
+        for score in scores:
+            total += score.total
+            credits = score.subject.credits
+            total_credits += credits
 
-    def calculate_result(self):
-        # This method will be called when the result of the student is to be calculated
-        # It will calculate the result of the student and update the result field
-        pass
+            # Calculate SGPA component based on score ranges
+            if score.total >= 90:
+                sgpa += 10 * credits
+            elif score.total >= 80:
+                sgpa += 9 * credits
+            elif score.total >= 70:
+                sgpa += 8 * credits
+            elif score.total >= 60:
+                sgpa += 7 * credits
+            elif score.total >= 50:
+                sgpa += 6 * credits
+            elif score.total >= 40:
+                sgpa += 5 * credits
+            else:
+                sgpa += 0
+
+        # Final SGPA calculation
+        sgpa = round(sgpa / total_credits, 2) if total_credits > 0 else 0
+        return total, sgpa
+
+    def _calculate_percentage(self, total):
+        """
+        Calculates percentage based on the total marks.
+        """
+        max_total = self.semester.num_subjects * 100
+        return round((total / max_total) * 100, 2) if max_total > 0 else 0
+
+    def calculate_all(self):
+        """
+        Calculates total marks, SGPA, and percentage in one pass through the scores.
+        """
+        scores = Score.objects.filter(student=self.student, semester=self.semester)
+
+        # Calculate total, SGPA, and total credits in one loop
+        total, sgpa = self._calculate_metrics(scores)
+
+        # Calculate percentage
+        percentage = self._calculate_percentage(total)
+
+        # Update fields
+        self.total = total
+        self.sgpa = sgpa
+        self.percentage = percentage
+        self.save()
 
 
 class StudentPerformanceAdmin(admin.ModelAdmin):

@@ -1,4 +1,3 @@
-import json
 import time
 from typing import Optional, Tuple
 
@@ -29,6 +28,7 @@ def status_code_str(code: int) -> str:
         1: "USN incorrect or unavailable.",
         2: "Captcha solving failed.",
         3: "VTU website cooldown.",
+        4: "Unexpected error occurred.",
     }
     return code_map[code]
 
@@ -200,11 +200,12 @@ def extract_marks_list(driver, num_sub_elements):
 
 def construct_dump_student_data(usn_text, stud_text, marks_list):
     student_data = {
-        "USN": usn_text.upper(),
-        "Name": stud_text.upper(),
+        # "USN": usn_text.upper(),
+        # "Name": stud_text.upper(),
         "Marks": marks_list,
     }
-    return json.dumps(student_data, indent=4)
+    # return json.dumps(student_data, indent=4)
+    return student_data
 
 
 def extract_student_details(driver):

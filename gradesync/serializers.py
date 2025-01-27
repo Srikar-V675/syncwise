@@ -90,6 +90,25 @@ class SubjectSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+# subject metric related serializers
+# class StudentSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Student
+#         fields = ['id', 'name', 'roll_number']  # Add other fields as required
+
+# class SubjectMetricsSerializer(serializers.ModelSerializer):
+#     highest_scorer = StudentSerializer(read_only=True)
+
+#     class Meta:
+#         model = SubjectMetrics
+#         fields = [
+#             'id', 'section', 'subject', 'semester', 'avg_score', 'num_backlogs',
+#             'pass_percentage', 'fail_percentage', 'absent_percentage',
+#             'fcd_count', 'fc_count', 'sc_count', 'fail_count',
+#             'absent_count', 'highest_score', 'highest_scorer'
+#         ]
+
+
 class SubjectListSerializer(serializers.ListSerializer):
     def create(self, validated_data):
         # perform batch operation

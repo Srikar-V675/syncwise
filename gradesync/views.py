@@ -54,6 +54,12 @@ class StudentViewSet(viewsets.ModelViewSet):
         return Student.objects.filter(section__in=sections)
 
 
+# subject metric related view
+# class SubjectMetricsListView(ListAPIView):
+#     queryset = SubjectMetrics.objects.select_related('highest_scorer', 'section', 'subject', 'semester')
+#     serializer_class = SubjectMetricsSerializer
+
+
 class IdentifySubjectsView(APIView):
     serializer_class = IdentifySubjectsSerializer
     permission_classes = [IsAuthenticated]

@@ -2,7 +2,7 @@
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import Student, Subject
+from .models import Score, Student, StudentPerformance, Subject, SubjectMetrics
 
 
 @receiver([post_save, post_delete], sender=Subject)
@@ -17,3 +17,31 @@ def update_student_count(sender, instance, **kwargs):
     batch = instance.batch
     section.count_num_students()
     batch.count_num_students()
+
+
+@receiver([post_save, post_delete], sender=StudentPerformance)
+def update_cgpa(sender, instance, **kwargs):
+    student = instance.student
+    student.calculate_cgpa()
+
+
+@receiver([post_save, post_delete], sender=Score)
+def update_student_and_subject_metrics(sender, instance, **kwargs):
+    student = instance.student
+    semester = instance.semester
+    subject = instance.subject
+
+    # Update the student performance metrics
+    student_performance = StudentPerformance.objects.get(
+        student=student, semester=semester
+    )
+    student_performance.calculate_all()
+
+    # Update the backlogs for the student
+    student.count_num_backlogs()
+
+    # Update the SubjectMetrics
+    subject_metrics = SubjectMetrics.objects.get(
+        subject=subject, semester=semester, section=student.section
+    )
+    subject_metrics.calculate_metrics()
