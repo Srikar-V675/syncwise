@@ -13,12 +13,16 @@ from .models import (
     SectionAdmin,
     Semester,
     SemesterAdmin,
+    SemesterMetrics,
+    SemesterMetricsAdmin,
     Student,
     StudentAdmin,
     StudentPerformance,
     StudentPerformanceAdmin,
     Subject,
     SubjectAdmin,
+    SubjectMetrics,
+    SubjectMetricsAdmin,
     User,
 )
 
@@ -129,3 +133,5 @@ admin.site.register(Student, StudentAdmin)
 admin.site.register(Subject, SubjectAdmin)
 admin.site.register(Score, ScoreAdmin)
 admin.site.register(StudentPerformance, StudentPerformanceAdmin)
+admin.site.register(SubjectMetrics, SubjectMetricsAdmin)
+admin.site.register(SemesterMetrics, SemesterMetricsAdmin)

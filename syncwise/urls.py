@@ -5,7 +5,6 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from gradesync.views import (
-    BatchComputePerformanceView,
     BatchViewSet,
     DepartmentViewSet,
     FetchScrapingProgressView,
@@ -13,10 +12,12 @@ from gradesync.views import (
     ScoreViewSet,
     ScrapeBatchView,
     SectionViewSet,
+    SemesterMetricsViewSet,
     SemesterViewSet,
     StudentBulkUploadView,
     StudentPerformanceViewSet,
     StudentViewSet,
+    SubjectMetricsViewSet,
     SubjectViewSet,
     UserViewSet,
 )
@@ -33,6 +34,10 @@ router.register(r"subjects", SubjectViewSet, basename="subject")
 router.register(r"scores", ScoreViewSet, basename="score")
 router.register(
     r"student-performances", StudentPerformanceViewSet, basename="student-performance"
+)
+router.register(r"subject-metrics", SubjectMetricsViewSet, basename="subject-metrics")
+router.register(
+    r"semester-metrics", SemesterMetricsViewSet, basename="semester-metrics"
 )
 
 
@@ -54,10 +59,5 @@ urlpatterns = [
         "api/scrape/progress/<str:redis_name>/",
         FetchScrapingProgressView.as_view(),
         name="scraping-progress",
-    ),
-    path(
-        "api/scrape/performance/",
-        BatchComputePerformanceView.as_view(),
-        name="compute-performance",
     ),
 ]

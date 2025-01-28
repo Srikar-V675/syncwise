@@ -9,7 +9,7 @@ class GradesyncConfig(AppConfig):
     name = "gradesync"
 
     def ready(self):
-        import gradesync.signals  # noqa
+        from gradesync import filters, signals  # noqa
 
         redis_client = RedisClient()
         try:

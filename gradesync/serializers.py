@@ -16,9 +16,11 @@ from .models import (
     Score,
     Section,
     Semester,
+    SemesterMetrics,
     Student,
     StudentPerformance,
     Subject,
+    SubjectMetrics,
     User,
 )
 
@@ -90,6 +92,39 @@ class SubjectSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class SubjectMetricsSerializer(serializers.ModelSerializer):
+    # highest_scorer = StudentSerializer(read_only=True)
+
+    class Meta:
+        model = SubjectMetrics
+        fields = "__all__"
+
+
+class SemesterMetricsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SemesterMetrics
+        fields = "__all__"
+
+
+# subject metric related serializers
+# class StudentSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Student
+#         fields = ['id', 'name', 'roll_number']  # Add other fields as required
+
+# class SubjectMetricsSerializer(serializers.ModelSerializer):
+#     highest_scorer = StudentSerializer(read_only=True)
+
+#     class Meta:
+#         model = SubjectMetrics
+#         fields = [
+#             'id', 'section', 'subject', 'semester', 'avg_score', 'num_backlogs',
+#             'pass_percentage', 'fail_percentage', 'absent_percentage',
+#             'fcd_count', 'fc_count', 'sc_count', 'fail_count',
+#             'absent_count', 'highest_score', 'highest_scorer'
+#         ]
+
+
 class SubjectListSerializer(serializers.ListSerializer):
     def create(self, validated_data):
         # perform batch operation
@@ -99,10 +134,6 @@ class SubjectListSerializer(serializers.ListSerializer):
         sem = subjects[0].sem
         sem.count_num_subjects()
         return subjects
-
-    # TODO: Implement below method in future
-    def update(self, validated_data):
-        pass
 
 
 class BatchSubjectSerializer(serializers.ModelSerializer):
@@ -152,15 +183,11 @@ class ScrapeBatchSerializer(serializers.Serializer):
 
             sections = Section.objects.filter(batch=batch)
 
-            # students = Student.objects.filter(batch=batch)
-
-            # redis_name = init_scraping_redis_key(total=len(students))
-
-            redis_names = []
+            redis_names = {}
             for section in sections:
                 students = Student.objects.filter(section=section)
                 redis_name = init_scraping_redis_key(total=len(students))
-                redis_names.append(redis_name)
+                redis_names[section.section_name] = redis_name
 
                 thread = threading.Thread(
                     target=scrape_bg_task,
@@ -176,42 +203,6 @@ class ScrapeBatchSerializer(serializers.Serializer):
             return {
                 "message": "Scraping background task has started.",
                 "redis_names": redis_names,
-            }
-        except Exception as e:
-            return {"error": str(e)}
-
-
-# TODO: create an endpoint for batch upadting the student performance
-class BatchComputePerformanceSerializer(serializers.Serializer):
-    batch = serializers.PrimaryKeyRelatedField(queryset=Batch.objects.all())
-    semester = serializers.PrimaryKeyRelatedField(queryset=Semester.objects.all())
-
-    def create(self, validated_data):
-        try:
-            # batch = validated_data['batch']
-            semester = validated_data["semester"]
-
-            scores = Score.objects.filter(semester=semester)
-            performances = []
-
-            for score in scores:
-                total = score.calculate_total()
-                percentage = score.calculate_percentage(total=total)
-                sgpa = score.calculate_sgpa()
-
-                performances.append(
-                    StudentPerformance(
-                        student=score.student,
-                        semester=score.semester,
-                        total=total,
-                        percentage=percentage,
-                        sgpa=sgpa,
-                    )
-                )
-            StudentPerformance.objects.bulk_create(performances)
-
-            return {
-                "message": "Succesfully computed student performances",
             }
         except Exception as e:
             return {"error": str(e)}
