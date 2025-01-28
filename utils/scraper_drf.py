@@ -1,4 +1,10 @@
-from gradesync.models import Score, StudentPerformance, Subject, SubjectMetrics
+from gradesync.models import (
+    Score,
+    SemesterMetrics,
+    StudentPerformance,
+    Subject,
+    SubjectMetrics,
+)
 from utils.driver import initialise_driver
 from utils.redis_conn import (
     incr_scraping_progress,
@@ -31,6 +37,7 @@ def add_scores_and_update_metrics(semester, student, scores):
         subjects, existing_scores = fetch_related_objects(semester, student)
         batch_add_scores(student, semester, scores, subjects, existing_scores)
         update_subject_metrics(subjects, semester, student.section)
+        update_semester_metrics(semester, student.section)
     except Exception as e:
         raise e
 
@@ -122,6 +129,14 @@ def update_subject_metrics(subjects, semester, section):
             subject=subject, semester=semester, section=section
         )
         subject_metrics.calculate_metrics()
+
+
+def update_semester_metrics(semester, section):
+    """Update or create semester metrics."""
+    semester_metrics, _ = SemesterMetrics.objects.get_or_create(
+        semester=semester, section=section
+    )
+    semester_metrics.calculate_metrics()
 
 
 def batch_add_scores(student, semester, scores, subjects, existing_scores):

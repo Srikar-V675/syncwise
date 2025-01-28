@@ -1,23 +1,37 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.redis_conn import get_scraping_info
 
+from .filters import (
+    BatchFilter,
+    ScoreFilter,
+    SectionFilter,
+    SemesterFilter,
+    SemesterMetricsFilter,
+    StudentFilter,
+    StudentPerformanceFilter,
+    SubjectFilter,
+    SubjectMetricsFilter,
+)
 from .models import (
     Batch,
     Department,
     Score,
     Section,
     Semester,
+    SemesterMetrics,
     Student,
     StudentPerformance,
     Subject,
+    SubjectMetrics,
     User,
 )
 from .serializers import (
-    BatchComputePerformanceSerializer,
     BatchSerializer,
     BatchSubjectSerializer,
     DepartmentSerializer,
@@ -25,10 +39,12 @@ from .serializers import (
     ScoreSerializer,
     ScrapeBatchSerializer,
     SectionSerializer,
+    SemesterMetricsSerializer,
     SemesterSerializer,
     StudentBulkUploadSeializer,
     StudentPerformanceSerializer,
     StudentSerializer,
+    SubjectMetricsSerializer,
     SubjectSerializer,
     UserSerializer,
 )
@@ -47,6 +63,13 @@ class StudentViewSet(viewsets.ModelViewSet):
     serializer_class = StudentSerializer
     # queryset = Student.objects.all()
     permission_classes = [IsAuthenticated]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = StudentFilter
+
+    search_fields = ["batch__batch_name"]
+    ordering_fields = ["usn", "cgpa", "num_backlogs"]
+    ordering = ["usn"]
 
     def get_queryset(self):
         teacher = self.request.user
@@ -121,19 +144,6 @@ class FetchScrapingProgressView(APIView):
         return Response({"details": details})
 
 
-class BatchComputePerformanceView(APIView):
-    serializer_class = BatchComputePerformanceSerializer
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        serialzer = self.serializer_class(data=request.data)
-
-        if serialzer.is_valid():
-            return Response(serialzer.save(), status=status.HTTP_200_OK)
-
-        return Response(serialzer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 class StudentBulkUploadView(APIView):
     serializer_class = StudentBulkUploadSeializer
     permission_classes = [IsAuthenticated]
@@ -161,6 +171,13 @@ class SubjectViewSet(viewsets.ModelViewSet):
     serializer_class = SubjectSerializer
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = SubjectFilter
+
+    search_fields = ["subject_name", "subject_code"]
+    ordering_fields = ["subject_code", "credits"]
+    ordering = ["subject_code"]
+
     def create(self, request, *args, **kwargs):
         if isinstance(request.data, list):
             serializer = BatchSubjectSerializer(data=request.data, many=True)
@@ -177,11 +194,25 @@ class SectionViewSet(viewsets.ModelViewSet):
     queryset = Section.objects.all()
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = SectionFilter
+
+    search_fields = ["section_name"]
+    ordering_fields = ["section_name"]
+    ordering = ["section_name"]
+
 
 class SemesterViewSet(viewsets.ModelViewSet):
     serializer_class = SemesterSerializer
     queryset = Semester.objects.all()
     permission_classes = [IsAuthenticated]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = SemesterFilter
+
+    search_fields = ["semester_number"]
+    ordering_fields = ["semester_number"]
+    ordering = ["semester_number"]
 
 
 class DepartmentViewSet(viewsets.ModelViewSet):
@@ -195,14 +226,95 @@ class BatchViewSet(viewsets.ModelViewSet):
     queryset = Batch.objects.all()
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = BatchFilter
+
+    search_fields = ["batch_name"]
+    ordering_fields = ["scheme", "batch_start_year"]
+    ordering = ["batch_start_year"]
+
 
 class ScoreViewSet(viewsets.ModelViewSet):
     serializer_class = ScoreSerializer
     queryset = Score.objects.all()
     permission_classes = [IsAuthenticated]
 
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = ScoreFilter
+
+    search_fields = ["student__usn", "subject__subject_code"]
+    ordering_fields = ["student__usn", "subject__subject_code"]
+    ordering = ["student__usn"]
+
 
 class StudentPerformanceViewSet(viewsets.ModelViewSet):
     serializer_class = StudentPerformanceSerializer
     queryset = StudentPerformance.objects.all()
     permission_classes = [IsAuthenticated]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = StudentPerformanceFilter
+
+    search_fields = ["student__usn", "semester__semester_number"]
+    ordering_fields = [
+        "student__usn",
+        "semester__semester_number",
+        "sgpa",
+        "total",
+        "percentage",
+        "num_backlogs",
+    ]
+    ordering = ["student__usn"]
+
+
+class SubjectMetricsViewSet(viewsets.ModelViewSet):
+    serializer_class = SubjectMetricsSerializer
+    queryset = SubjectMetrics.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = SubjectMetricsFilter
+
+    search_fields = [
+        "section__section_name",
+        "subject__subject_name",
+        "semester__semester_number",
+        "subject__subject_code",
+    ]
+    ordering_fields = [
+        "section__section_name",
+        "subject__subject_name",
+        "semester__semester_number",
+        "avg_score",
+        "num_backlogs",
+        "pass_percentage",
+        "fail_percentage",
+        "absent_percentage",
+        "highest_scorer__usn",
+        "highest_score",
+    ]
+    ordering = ["section__section_name"]
+
+
+class SemesterMetricsViewSet(viewsets.ModelViewSet):
+    serializer_class = SemesterMetricsSerializer
+    queryset = SemesterMetrics.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = SemesterMetricsFilter
+
+    search_fields = ["section__section_name", "semester__semester_number"]
+    ordering_fields = [
+        "section__section_name",
+        "semester__semester_number",
+        "avg_score",
+        "num_backlogs",
+        "pass_percentage",
+        "fail_percentage",
+        "fail_1_sub",
+        "fail_2_subs",
+        "fail_3_subs",
+        "fail_greater_3_subs",
+    ]
+    ordering = ["section__section_name"]

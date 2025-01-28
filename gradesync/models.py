@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from django.db.models import Avg, Sum
+from django.db.models import Avg, Prefetch, Sum
 
 
 class Department(models.Model):
@@ -67,7 +67,7 @@ class Section(models.Model):
 
     def count_num_students(self):
         # It will count the number of students in the section and update the num_students field
-        self.num_students = Student.objects.filter(section=self).count()
+        self.num_students = Student.objects.filter(section=self, active=True).count()
         self.save()
 
 
@@ -77,27 +77,27 @@ class SectionAdmin(admin.ModelAdmin):
 
 class Semester(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.CASCADE)
-    sem_number = models.IntegerField()
+    semester_number = models.IntegerField()
     num_subjects = models.IntegerField(
         default=0
     )  # defaulted to 0 cause if the number of subjects is not known, it can be updated later
     current = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Semester {self.sem_number}"
+        return f"Semester {self.semester_number}"
 
     def count_num_subjects(self):
         # It will count the number of subjects in the semester and update the num_subjects field
-        self.num_subjects = Subject.objects.filter(sem=self).count()
+        self.num_subjects = Subject.objects.filter(semester=self).count()
         self.save()
 
 
 class SemesterAdmin(admin.ModelAdmin):
-    list_display = ("batch", "sem_number", "num_subjects", "current")
+    list_display = ("batch", "semester_number", "num_subjects", "current")
 
 
 class Subject(models.Model):
-    sem = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     sub_name = models.CharField(max_length=100)
     sub_code = models.CharField(max_length=10)
     credits = models.IntegerField()
@@ -107,7 +107,7 @@ class Subject(models.Model):
 
 
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ("sem", "sub_name", "sub_code", "credits")
+    list_display = ("semester", "sub_name", "sub_code", "credits")
 
 
 class Student(models.Model):
@@ -135,8 +135,8 @@ class Student(models.Model):
     def count_num_backlogs(self):
         # It will count the number of backlogs of the student and update the num_backlogs field
         # grade Fail or Absent is considered as backlog
-        self.num_backlogs = Score.objects.filter(
-            student=self, grade__in=["F", "A"]
+        self.num_backlogs = StudentPerformance.objects.filter(
+            student=self, num_backlogs__gt=0
         ).count()
         self.save()
 
@@ -172,7 +172,7 @@ class Score(models.Model):
         return (
             self.student.user.username
             + " - "
-            + str(self.semester.sem_number)
+            + str(self.semester.semester_number)
             + " - "
             + self.subject.sub_name
         )
@@ -220,7 +220,7 @@ class SubjectMetrics(models.Model):
             + " - "
             + self.subject.sub_name
             + " - "
-            + str(self.semester.sem_number)
+            + str(self.semester.semester_number)
         )
 
     def _calculate_counts(self, scores):
@@ -361,16 +361,193 @@ class SubjectMetricsAdmin(admin.ModelAdmin):
     )
 
 
+class SemesterMetrics(models.Model):
+    semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
+    section = models.ForeignKey(Section, on_delete=models.CASCADE)
+    avg_sgpa = models.DecimalField(
+        max_digits=4, decimal_places=2, default=0
+    )  # average sgpa of the section
+    total_backlogs = models.IntegerField(
+        default=0
+    )  # total number of students with backlogs
+    pass_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0
+    )  # total number of students that didn't have backlogs
+    fail_percentage = models.DecimalField(
+        max_digits=5, decimal_places=2, default=0
+    )  # total number of students with backlogs
+    pass_count = models.IntegerField(default=0)
+    fail_1_sub = models.IntegerField(default=0)  # students with 1 backlog
+    fail_2_subs = models.IntegerField(default=0)  # students with 2 backlogs
+    fail_3_subs = models.IntegerField(default=0)  # students with 3 backlogs
+    fail_greater_3_subs = models.IntegerField(
+        default=0
+    )  # students with more than 3 backlogs
+
+    def __str__(self):
+        return f"{self.semester.semester_number}" + " - " + self.section.section_name
+
+    def _calculate_fails(self, scores):
+        """Calculate the number of failed subjects for a given set of scores."""
+        fail_count = 0
+        for score in scores:
+            if score.grade in ["F", "A"]:
+                fail_count += 1
+        return fail_count
+
+    def _calculate_counts(
+        self,
+        fail_count,
+        pass_count,
+        total_backlogs,
+        fail_1_sub,
+        fail_2_subs,
+        fail_3_subs,
+        fail_greater_3_subs,
+    ):
+        """Update counts based on the number of failed subjects."""
+        if fail_count == 0:
+            pass_count += 1
+        else:
+            total_backlogs += 1
+            if fail_count == 1:
+                fail_1_sub += 1
+            elif fail_count == 2:
+                fail_2_subs += 1
+            elif fail_count == 3:
+                fail_3_subs += 1
+            else:
+                fail_greater_3_subs += 1
+
+        return (
+            pass_count,
+            total_backlogs,
+            fail_1_sub,
+            fail_2_subs,
+            fail_3_subs,
+            fail_greater_3_subs,
+        )
+
+    def _update_metrics(
+        self,
+        total_students,
+        total_sgpa,
+        pass_count,
+        total_backlogs,
+        fail_1_sub,
+        fail_2_subs,
+        fail_3_subs,
+        fail_greater_3_subs,
+    ):
+        """Update the metrics for the semester performance."""
+        self.avg_sgpa = (
+            round(total_sgpa / total_students, 2) if total_students > 0 else 0
+        )
+        self.pass_percentage = (
+            round(pass_count / total_students * 100, 2) if total_students > 0 else 0
+        )
+        self.fail_percentage = (
+            round(total_backlogs / total_students * 100, 2) if total_students > 0 else 0
+        )
+        self.pass_count = pass_count
+        self.total_backlogs = total_backlogs
+        self.fail_1_sub = fail_1_sub
+        self.fail_2_subs = fail_2_subs
+        self.fail_3_subs = fail_3_subs
+        self.fail_greater_3_subs = fail_greater_3_subs
+
+        self.save()
+
+    def calculate_metrics(self):
+        """Main function to calculate metrics for a given section and semester."""
+        students = Student.objects.filter(section=self.section, active=True)
+        total_students = students.count()
+
+        if total_students == 0:
+            return
+
+        # Prefetch scores for the given semester for all students
+        scores = Score.objects.filter(semester=self.semester)
+        students = students.prefetch_related(
+            Prefetch("score_set", queryset=scores, to_attr="cached_scores")
+        )
+
+        (
+            total_sgpa,
+            pass_count,
+            total_backlogs,
+            fail_1_sub,
+            fail_2_subs,
+            fail_3_subs,
+            fail_greater_3_subs,
+        ) = (0, 0, 0, 0, 0, 0, 0)
+
+        for student in students:
+            # Use prefetched scores instead of querying the database again
+            student_scores = student.cached_scores
+
+            fail_count = self._calculate_fails(student_scores)
+
+            student_performance = StudentPerformance.objects.get(
+                student=student, semester=self.semester
+            )
+            total_sgpa += student_performance.sgpa
+
+            (
+                pass_count,
+                total_backlogs,
+                fail_1_sub,
+                fail_2_subs,
+                fail_3_subs,
+                fail_greater_3_subs,
+            ) = self._calculate_counts(
+                fail_count=fail_count,
+                pass_count=pass_count,
+                total_backlogs=total_backlogs,
+                fail_1_sub=fail_1_sub,
+                fail_2_subs=fail_2_subs,
+                fail_3_subs=fail_3_subs,
+                fail_greater_3_subs=fail_greater_3_subs,
+            )
+
+        self._update_metrics(
+            total_students=total_students,
+            total_sgpa=total_sgpa,
+            pass_count=pass_count,
+            total_backlogs=total_backlogs,
+            fail_1_sub=fail_1_sub,
+            fail_2_subs=fail_2_subs,
+            fail_3_subs=fail_3_subs,
+            fail_greater_3_subs=fail_greater_3_subs,
+        )
+
+
+class SemesterMetricsAdmin(admin.ModelAdmin):
+    list_display = (
+        "semester",
+        "section",
+        "avg_sgpa",
+        "total_backlogs",
+        "pass_percentage",
+        "fail_percentage",
+        "pass_count",
+        "fail_1_sub",
+        "fail_2_subs",
+        "fail_3_subs",
+        "fail_greater_3_subs",
+    )
+
+
 class StudentPerformance(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     semester = models.ForeignKey(Semester, on_delete=models.CASCADE)
     total = models.IntegerField(default=0)
     percentage = models.FloatField(default=0.0)
     sgpa = models.FloatField(default=0.0)
-    # add more fields if needed based on info in dashboards
+    num_backlogs = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.student.user.username + " - " + str(self.semester.sem_number)
+        return self.student.user.username + " - " + str(self.semester.semester_number)
 
     def _calculate_metrics(self, scores):
         """
@@ -378,15 +555,21 @@ class StudentPerformance(models.Model):
         - Total marks
         - SGPA
         - Total credits
+        - Number of backlogs
         """
         total = 0
         sgpa = 0
         total_credits = 0
+        num_backlogs = 0
 
         for score in scores:
             total += score.total
             credits = score.subject.credits
             total_credits += credits
+
+            # Calculate number of backlogs
+            if score.grade in ["F", "A"]:
+                num_backlogs += 1
 
             # Calculate SGPA component based on score ranges
             if score.total >= 90:
@@ -406,7 +589,7 @@ class StudentPerformance(models.Model):
 
         # Final SGPA calculation
         sgpa = round(sgpa / total_credits, 2) if total_credits > 0 else 0
-        return total, sgpa
+        return total, sgpa, num_backlogs
 
     def _calculate_percentage(self, total):
         """
@@ -422,7 +605,7 @@ class StudentPerformance(models.Model):
         scores = Score.objects.filter(student=self.student, semester=self.semester)
 
         # Calculate total, SGPA, and total credits in one loop
-        total, sgpa = self._calculate_metrics(scores)
+        total, sgpa, num_backlogs = self._calculate_metrics(scores)
 
         # Calculate percentage
         percentage = self._calculate_percentage(total)
@@ -431,6 +614,7 @@ class StudentPerformance(models.Model):
         self.total = total
         self.sgpa = sgpa
         self.percentage = percentage
+        self.num_backlogs = num_backlogs
         self.save()
 
 
