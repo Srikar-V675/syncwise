@@ -56,10 +56,11 @@ def calculate_grade(total, result_code):
 def fetch_related_objects(semester, student):
     """Prefetch subjects and existing scores."""
     subjects = {
-        subject.sub_code: subject for subject in Subject.objects.filter(sem=semester)
+        subject.sub_code: subject
+        for subject in Subject.objects.filter(semester=semester)
     }
     existing_scores = {
-        (score.subject.sub_code, score.subject.sem): score
+        (score.subject.sub_code, score.subject.semester): score
         for score in Score.objects.filter(student=student, semester=semester)
     }
     return subjects, existing_scores
@@ -81,7 +82,7 @@ def handle_score_update_or_create(
     if not subject:
         raise ValueError(f"Subject with code {sub_code} not found for semester.")
 
-    score_key = (subject.sub_code, subject.sem)
+    score_key = (subject.sub_code, subject.semester)
     if score_key in existing_scores:
         score_obj = existing_scores[score_key]
         score_obj.internal = internal
@@ -93,7 +94,7 @@ def handle_score_update_or_create(
         marks_new.append(
             Score(
                 student=student,
-                semester=subject.sem,
+                semester=subject.semester,
                 subject=subject,
                 internal=internal,
                 external=external,

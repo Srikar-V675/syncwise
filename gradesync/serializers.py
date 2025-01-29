@@ -1,4 +1,3 @@
-import json
 import threading
 
 import pandas as pd
@@ -157,9 +156,11 @@ class IdentifySubjectsSerializer(serializers.Serializer):
             driver = initialise_driver()
             scraped_res = scrape_result(USN=usn, url=result_url, driver=driver)
 
+            print("Scraped result: ", scraped_res, flush=True)
+
             subjects = [
                 {"sub_name": mark["Subject Name"], "sub_code": mark["Subject Code"]}
-                for mark in json.loads(scraped_res[0])["Marks"]  # type: ignore
+                for mark in scraped_res[0]["Marks"]
             ]
             code = status_code_str(code=scraped_res[1])
 
