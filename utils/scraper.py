@@ -200,8 +200,6 @@ def extract_marks_list(driver, num_sub_elements):
 
 def construct_dump_student_data(usn_text, stud_text, marks_list):
     student_data = {
-        # "USN": usn_text.upper(),
-        # "Name": stud_text.upper(),
         "Marks": marks_list,
     }
     # return json.dumps(student_data, indent=4)
