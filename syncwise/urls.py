@@ -20,6 +20,8 @@ from gradesync.views import (
     SubjectMetricsViewSet,
     SubjectViewSet,
     UserViewSet,
+    get_scores_by_section_and_semester,
+    get_scores_by_student,
 )
 
 # Create a router and register our viewset with it.
@@ -59,5 +61,15 @@ urlpatterns = [
         "api/scrape/progress/<str:redis_name>/",
         FetchScrapingProgressView.as_view(),
         name="scraping-progress",
+    ),
+    path(
+        "api/scores/section/<int:section_id>/semester/<int:semester_id>/",
+        get_scores_by_section_and_semester,
+        name="get-scores",
+    ),
+    path(
+        "api/scores/student/<int:student_id>/",
+        get_scores_by_student,
+        name="get-scores",
     ),
 ]

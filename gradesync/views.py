@@ -1,5 +1,7 @@
+from django.db.models import Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
+from rest_framework.decorators import api_view
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -61,7 +63,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class StudentViewSet(viewsets.ModelViewSet):
     serializer_class = StudentSerializer
-    # queryset = Student.objects.all()
+    queryset = Student.objects.all()
     permission_classes = [IsAuthenticated]
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -70,17 +72,6 @@ class StudentViewSet(viewsets.ModelViewSet):
     search_fields = ["batch__batch_name"]
     ordering_fields = ["usn", "cgpa", "num_backlogs"]
     ordering = ["usn"]
-
-    def get_queryset(self):
-        teacher = self.request.user
-        sections = Section.objects.filter(teacher=teacher)
-        return Student.objects.filter(section__in=sections)
-
-
-# subject metric related view
-# class SubjectMetricsListView(ListAPIView):
-#     queryset = SubjectMetrics.objects.select_related('highest_scorer', 'section', 'subject', 'semester')
-#     serializer_class = SubjectMetricsSerializer
 
 
 class IdentifySubjectsView(APIView):
@@ -245,6 +236,107 @@ class ScoreViewSet(viewsets.ModelViewSet):
     search_fields = ["student__usn", "subject__subject_code"]
     ordering_fields = ["student__usn", "subject__subject_code"]
     ordering = ["student__usn"]
+
+
+@api_view(["GET"])
+def get_scores_by_section_and_semester(request, section_id, semester_id):
+    section = Section.objects.filter(id=section_id).first()
+    semester = Semester.objects.filter(id=semester_id).first()
+
+    if not section or not semester:
+        return Response(
+            {"error": "Section or Semester does not exist"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    students = Student.objects.filter(section=section_id, active=True).prefetch_related(
+        Prefetch(
+            "score_set",
+            queryset=Score.objects.filter(semester=semester_id),
+            to_attr="cached_scores",
+        ),
+        Prefetch(
+            "studentperformance_set",
+            queryset=StudentPerformance.objects.filter(semester=semester_id),
+            to_attr="cached_performance",
+        ),
+    )
+
+    student_data = []
+    for student in students:
+        student_info = {
+            "id": student.id,
+            "usn": student.usn,
+            "name": student.user.first_name,
+            "total": student.cached_performance[0].total,
+            "sgpa": student.cached_performance[0].sgpa,
+            "percentage": student.cached_performance[0].percentage,
+            "scores": [
+                {
+                    "id": score.id,
+                    "subject_name": score.subject.sub_name,
+                    "subject_code": score.subject.sub_code,
+                    "internal": score.internal,
+                    "external": score.external,
+                    "total": score.total,
+                    "grade": score.grade,
+                }
+                for score in student.cached_scores
+            ],
+        }
+
+        student_data.append(student_info)
+
+    return Response(student_data)
+
+
+@api_view(["GET"])
+def get_scores_by_student(request, student_id):
+    student = Student.objects.filter(id=student_id).first()
+
+    if not student:
+        return Response(
+            {"error": "Student does not exist"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    semesters = Semester.objects.filter(batch=student.batch).prefetch_related(
+        Prefetch(
+            "score_set",
+            queryset=Score.objects.filter(student=student_id),
+            to_attr="cached_scores",
+        ),
+        Prefetch(
+            "studentperformance_set",
+            queryset=StudentPerformance.objects.filter(student=student_id),
+            to_attr="cached_performance",
+        ),
+    )
+
+    student_data = []
+    for semester in semesters:
+        student_info = {
+            "semester": semester.semester_number,
+            "total": semester.cached_performance[0].total,
+            "sgpa": semester.cached_performance[0].sgpa,
+            "percentage": semester.cached_performance[0].percentage,
+            "scores": [
+                {
+                    "id": score.id,
+                    "subject_name": score.subject.sub_name,
+                    "subject_code": score.subject.sub_code,
+                    "internal": score.internal,
+                    "external": score.external,
+                    "total": score.total,
+                    "grade": score.grade,
+                }
+                for score in semester.cached_scores
+            ],
+        }
+
+        student_data.append(student_info)
+
+    return Response(student_data)
 
 
 class StudentPerformanceViewSet(viewsets.ModelViewSet):

@@ -75,6 +75,7 @@ class ScoreFilter(django_filters.FilterSet):
             "student": ["exact"],
             "subject": ["exact"],
             "semester": ["exact"],
+            "student__section": ["exact"],
             "internal": ["exact", "lt", "gt"],
             "external": ["exact", "lt", "gt"],
             "total": ["exact", "lt", "gt"],

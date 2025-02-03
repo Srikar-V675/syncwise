@@ -79,6 +79,32 @@ class ScoreSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class StudentScoreSerializer(serializers.ModelSerializer):
+    """Serializer to return scores grouped by student."""
+
+    name = serializers.CharField(source="user.first_name", read_only=True)
+    scores = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Student
+        fields = ["id", "name", "scores"]
+
+    def get_scores(self, student):
+        scores = student.cached_scores  # Prefetched scores
+        return [
+            {
+                "semester": score.semester.semester_number,
+                "subject_name": score.subject.sub_name,
+                "subject_code": score.subject.sub_code,
+                "internal": score.internal,
+                "external": score.external,
+                "total": score.total,
+                "grade": score.grade,
+            }
+            for score in scores
+        ]
+
+
 class StudentPerformanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentPerformance
@@ -105,32 +131,13 @@ class SemesterMetricsSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-# subject metric related serializers
-# class StudentSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Student
-#         fields = ['id', 'name', 'roll_number']  # Add other fields as required
-
-# class SubjectMetricsSerializer(serializers.ModelSerializer):
-#     highest_scorer = StudentSerializer(read_only=True)
-
-#     class Meta:
-#         model = SubjectMetrics
-#         fields = [
-#             'id', 'section', 'subject', 'semester', 'avg_score', 'num_backlogs',
-#             'pass_percentage', 'fail_percentage', 'absent_percentage',
-#             'fcd_count', 'fc_count', 'sc_count', 'fail_count',
-#             'absent_count', 'highest_score', 'highest_scorer'
-#         ]
-
-
 class SubjectListSerializer(serializers.ListSerializer):
     def create(self, validated_data):
         # perform batch operation
         subjects = Subject.objects.bulk_create(
             [Subject(**item) for item in validated_data]
         )
-        sem = subjects[0].sem
+        sem = subjects[0].semester
         sem.count_num_subjects()
         return subjects
 
@@ -166,7 +173,7 @@ class IdentifySubjectsSerializer(serializers.Serializer):
 
             return {"subjects": subjects, "status": code}
         except Exception as e:
-            return {"error": e}
+            return {"error": str(e)}
 
 
 class ScrapeBatchSerializer(serializers.Serializer):

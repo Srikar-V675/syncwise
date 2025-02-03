@@ -25,6 +25,7 @@ def scrape_bg_task(semester, students, redis_name, result_url):
                 add_scores_and_update_metrics(semester, student, scores=score["Marks"])
             incr_scraping_progress(redis_name)
 
+        update_semester_metrics(semester, student.section)
         log_scraping_errors(name=redis_name, errors=errors)
 
     except Exception as e:
@@ -37,7 +38,6 @@ def add_scores_and_update_metrics(semester, student, scores):
         subjects, existing_scores = fetch_related_objects(semester, student)
         batch_add_scores(student, semester, scores, subjects, existing_scores)
         update_subject_metrics(subjects, semester, student.section)
-        update_semester_metrics(semester, student.section)
     except Exception as e:
         raise e
 
