@@ -14,7 +14,7 @@ from .models import (
 
 @receiver([post_save, post_delete], sender=Subject)
 def update_subject_count(sender, instance, **kwargs):
-    semester = instance.sem
+    semester = instance.semester
     semester.count_num_subjects()
 
 
