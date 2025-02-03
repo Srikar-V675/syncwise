@@ -79,6 +79,32 @@ class ScoreSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class StudentScoreSerializer(serializers.ModelSerializer):
+    """Serializer to return scores grouped by student."""
+
+    name = serializers.CharField(source="user.first_name", read_only=True)
+    scores = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Student
+        fields = ["id", "name", "scores"]
+
+    def get_scores(self, student):
+        scores = student.cached_scores  # Prefetched scores
+        return [
+            {
+                "semester": score.semester.semester_number,
+                "subject_name": score.subject.sub_name,
+                "subject_code": score.subject.sub_code,
+                "internal": score.internal,
+                "external": score.external,
+                "total": score.total,
+                "grade": score.grade,
+            }
+            for score in scores
+        ]
+
+
 class StudentPerformanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentPerformance
@@ -91,8 +117,23 @@ class SubjectSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class SubjectMetricsSubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
+        fields = ["id", "sub_name", "sub_code"]
+
+
+class HighestScorerSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="user.first_name", read_only=True)
+
+    class Meta:
+        model = Student
+        fields = ["id", "usn", "name"]
+
+
 class SubjectMetricsSerializer(serializers.ModelSerializer):
-    # highest_scorer = StudentSerializer(read_only=True)
+    subject = SubjectMetricsSubjectSerializer(read_only=True)
+    highest_scorer = HighestScorerSerializer(read_only=True)
 
     class Meta:
         model = SubjectMetrics
@@ -103,25 +144,6 @@ class SemesterMetricsSerializer(serializers.ModelSerializer):
     class Meta:
         model = SemesterMetrics
         fields = "__all__"
-
-
-# subject metric related serializers
-# class StudentSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Student
-#         fields = ['id', 'name', 'roll_number']  # Add other fields as required
-
-# class SubjectMetricsSerializer(serializers.ModelSerializer):
-#     highest_scorer = StudentSerializer(read_only=True)
-
-#     class Meta:
-#         model = SubjectMetrics
-#         fields = [
-#             'id', 'section', 'subject', 'semester', 'avg_score', 'num_backlogs',
-#             'pass_percentage', 'fail_percentage', 'absent_percentage',
-#             'fcd_count', 'fc_count', 'sc_count', 'fail_count',
-#             'absent_count', 'highest_score', 'highest_scorer'
-#         ]
 
 
 class SubjectListSerializer(serializers.ListSerializer):

@@ -75,6 +75,7 @@ class ScoreFilter(django_filters.FilterSet):
             "student": ["exact"],
             "subject": ["exact"],
             "semester": ["exact"],
+            "student__section": ["exact"],
             "internal": ["exact", "lt", "gt"],
             "external": ["exact", "lt", "gt"],
             "total": ["exact", "lt", "gt"],
@@ -102,18 +103,6 @@ class SubjectMetricsFilter(django_filters.FilterSet):
             "section": ["exact"],
             "subject": ["exact"],
             "semester": ["exact"],
-            "avg_score": ["exact", "lt", "gt"],
-            "num_backlogs": ["exact", "lt", "gt"],
-            "pass_percentage": ["exact", "lt", "gt"],
-            "fail_percentage": ["exact", "lt", "gt"],
-            "absent_percentage": ["exact", "lt", "gt"],
-            "fcd_count": ["exact", "lt", "gt"],
-            "fc_count": ["exact", "lt", "gt"],
-            "sc_count": ["exact", "lt", "gt"],
-            "fail_count": ["exact", "lt", "gt"],
-            "absent_count": ["exact", "lt", "gt"],
-            "highest_score": ["exact", "lt", "gt"],
-            "highest_scorer": ["exact"],
         }
 
 

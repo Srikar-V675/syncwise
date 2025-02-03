@@ -38,7 +38,6 @@ def add_scores_and_update_metrics(semester, student, scores):
         subjects, existing_scores = fetch_related_objects(semester, student)
         batch_add_scores(student, semester, scores, subjects, existing_scores)
         update_subject_metrics(subjects, semester, student.section)
-       # update_semester_metrics(semester, student.section)
     except Exception as e:
         raise e
 
