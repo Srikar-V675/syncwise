@@ -366,26 +366,12 @@ class SubjectMetricsViewSet(viewsets.ModelViewSet):
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = SubjectMetricsFilter
-
-    search_fields = [
-        "section__section_name",
-        "subject__subject_name",
-        "semester__semester_number",
-        "subject__subject_code",
-    ]
-    ordering_fields = [
-        "section__section_name",
-        "subject__subject_name",
-        "semester__semester_number",
-        "avg_score",
-        "num_backlogs",
-        "pass_percentage",
-        "fail_percentage",
-        "absent_percentage",
-        "highest_scorer__usn",
-        "highest_score",
-    ]
     ordering = ["section__section_name"]
+
+    def get_queryset(self):
+        return SubjectMetrics.objects.select_related(
+            "subject", "highest_scorer", "highest_scorer__user"
+        )
 
 
 class SemesterMetricsViewSet(viewsets.ModelViewSet):

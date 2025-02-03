@@ -117,8 +117,23 @@ class SubjectSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class SubjectMetricsSubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
+        fields = ["id", "sub_name", "sub_code"]
+
+
+class HighestScorerSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="user.first_name", read_only=True)
+
+    class Meta:
+        model = Student
+        fields = ["id", "usn", "name"]
+
+
 class SubjectMetricsSerializer(serializers.ModelSerializer):
-    # highest_scorer = StudentSerializer(read_only=True)
+    subject = SubjectMetricsSubjectSerializer(read_only=True)
+    highest_scorer = HighestScorerSerializer(read_only=True)
 
     class Meta:
         model = SubjectMetrics
