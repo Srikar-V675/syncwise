@@ -488,6 +488,7 @@ class SemesterMetrics(models.Model):
 
             fail_count = self._calculate_fails(student_scores)
 
+            print("SemesterMetrics semester: ", self.semester)
             student_performance = StudentPerformance.objects.get(
                 student=student, semester=self.semester
             )

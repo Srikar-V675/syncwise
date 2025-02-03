@@ -130,7 +130,7 @@ class SubjectListSerializer(serializers.ListSerializer):
         subjects = Subject.objects.bulk_create(
             [Subject(**item) for item in validated_data]
         )
-        sem = subjects[0].sem
+        sem = subjects[0].semester
         sem.count_num_subjects()
         return subjects
 
@@ -166,7 +166,7 @@ class IdentifySubjectsSerializer(serializers.Serializer):
 
             return {"subjects": subjects, "status": code}
         except Exception as e:
-            return {"error": e}
+            return {"error": str(e)}
 
 
 class ScrapeBatchSerializer(serializers.Serializer):

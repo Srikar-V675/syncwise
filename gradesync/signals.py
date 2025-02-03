@@ -14,7 +14,7 @@ from .models import (
 
 @receiver([post_save, post_delete], sender=Subject)
 def update_subject_count(sender, instance, **kwargs):
-    semester = instance.sem
+    semester = instance.semester
     semester.count_num_subjects()
 
 
@@ -33,7 +33,7 @@ def update_cgpa(sender, instance, **kwargs):
     student.count_num_backlogs()
 
 
-@receiver([post_save, post_delete], sender=Score)
+@receiver([post_save], sender=Score)
 def update_student_and_metrics(sender, instance, **kwargs):
     student = instance.student
     semester = instance.semester

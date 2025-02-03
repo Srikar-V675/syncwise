@@ -39,4 +39,4 @@ def solve_captcha(imagePath):
         return data["result"]
 
 
-# print(solve_captcha("utils/captcha.png"))
+print(solve_captcha("utils/captcha.png"))
