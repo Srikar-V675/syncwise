@@ -7,8 +7,8 @@ from gradesync.models import (
 )
 from utils.driver import initialise_driver
 from utils.redis_conn import (
+    change_stop_field,
     incr_scraping_progress,
-    invalidate_scraping_redis_key,
     log_scraping_errors,
 )
 from utils.scraper import scrape_result, status_code_str
@@ -29,8 +29,7 @@ def scrape_bg_task(semester, students, redis_name, result_url):
         log_scraping_errors(name=redis_name, errors=errors)
 
     except Exception as e:
-        invalidate_scraping_redis_key(name=redis_name)
-        raise e
+        change_stop_field(name=redis_name, value=str(e))
 
 
 def add_scores_and_update_metrics(semester, student, scores):

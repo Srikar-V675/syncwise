@@ -29,7 +29,12 @@ def init_scraping_redis_key(total: int):
     name = str(uuid.uuid4())
 
     redis_client = RedisClient().get_connection
-    mapping = {"progress": 0, "total": total, "errors": json.dumps([])}
+    mapping = {
+        "progress": 0,
+        "total": total,
+        "errors": json.dumps([]),
+        "stop": "",
+    }
     redis_client.hset(name=name, mapping=mapping)
     redis_client.expire(name=name, time=10800)  # expiry in 3 hrs
 
@@ -51,6 +56,6 @@ def get_scraping_info(name: str):
     return redis_client.hgetall(name=name)
 
 
-def invalidate_scraping_redis_key(name: str):
+def change_stop_field(name: str, value: str):
     redis_client = RedisClient().get_connection
-    redis_client.delete(name)
+    redis_client.hset(name=name, key="stop", value=value)

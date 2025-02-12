@@ -10,6 +10,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 import utils.trueCaptcha as trueCaptcha
+from utils.trueCaptcha import TrueCaptchaConfigError
 
 # from driver import initialise_driver
 
@@ -258,6 +259,9 @@ def scrape_result(USN: str, url: str, driver) -> Tuple[Optional[str], int]:
     except WebDriverException as e:
         print(e, flush=True)
         return None, 3
+    except TrueCaptchaConfigError as e:
+        print(e, flush=True)
+        raise e
     except Exception as e:
         print(e, flush=True)
         return None, 4

@@ -1,42 +1,46 @@
 import base64
-import os
 
 import requests
-from dotenv import load_dotenv
 
-# Get the absolute path to the directory containing this Python script (alembic folder)
-current_dir = os.path.dirname(os.path.abspath(__file__))
-print(f"Current directory: {current_dir}", flush=True)
+from syncwise.settings import (
+    TRUE_CAPTCHA_API_KEY,
+    TRUE_CAPTCHA_URL,
+    TRUE_CAPTCHA_USER_ID,
+)
 
-# Get the absolute path to the project root directory (one levels up from the current directory)
-project_root = os.path.abspath(os.path.join(current_dir, ".."))
-print(f"Project root directory: {project_root}", flush=True)
 
-# Load environment variables from the .env file located in the project root directory
-dotenv_path = os.path.join(project_root, ".env")
-print(f"Loading environment variables from: {dotenv_path}", flush=True)
-load_dotenv(dotenv_path)
+class TrueCaptchaConfigError(Exception):
+    """Raised when TrueCaptcha configuration is missing."""
 
-# defining credentials file path from environment variable
-apikey = os.getenv("TRUE_CAPTCHA_API_KEY")
+    def __init__(
+        self,
+        message="TrueCaptcha API Key or User ID not found in environment variables",
+    ):
+        self.message = message
+        super().__init__(self.message)
 
 
 def solve_captcha(imagePath):
-    # logger.info("Solving captcha using TrueCaptcha API.")
-    with open(imagePath, "rb") as image_file:
-        encoded_string = base64.b64encode(image_file.read()).decode("ascii")
-        url = "https://api.apitruecaptcha.org/one/gettext"
+    if not TRUE_CAPTCHA_API_KEY or not TRUE_CAPTCHA_USER_ID:
+        raise TrueCaptchaConfigError()
 
-        data = {
-            "userid": "srikarvuchiha@gmail.com",
-            "apikey": apikey,
-            "data": encoded_string,
-            "mode": "auto",
-            "len_str": "6",
-        }
-        response = requests.post(url=url, json=data, timeout=5)
-        data = response.json()
-        return data["result"]
+    try:
+        with open(imagePath, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode("ascii")
+            url = TRUE_CAPTCHA_URL
+
+            data = {
+                "userid": TRUE_CAPTCHA_USER_ID,
+                "apikey": TRUE_CAPTCHA_API_KEY,
+                "data": encoded_string,
+                "mode": "auto",
+                "len_str": "6",
+            }
+            response = requests.post(url=url, json=data, timeout=5)
+            response.raise_for_status()
+            return response.json()["result"]
+    except Exception as e:
+        raise Exception(f"Error in solving captcha: {str(e)}")
 
 
 print(solve_captcha("utils/captcha.png"))
