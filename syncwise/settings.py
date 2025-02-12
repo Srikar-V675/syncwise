@@ -14,6 +14,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -33,6 +35,12 @@ ALLOWED_HOSTS = [
     "0.0.0.0",  # Allow requests from 0.0.0.0 (not recommended for production)
 ]
 
+# TrueCaptcha API Key
+dotenv_path = os.path.join(BASE_DIR, ".env")
+load_dotenv(dotenv_path)
+TRUE_CAPTCHA_API_KEY = os.getenv("TRUE_CAPTCHA_API_KEY")
+TRUE_CAPTCHA_USER_ID = os.getenv("TRUE_CAPTCHA_USER_ID")
+TRUE_CAPTCHA_URL = "https://api.apitruecaptcha.org/one/gettext"
 
 # Application definition
 
@@ -51,11 +59,6 @@ INSTALLED_APPS = [
     "django_filters",
 ]
 
-
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:3000",  # React app's URL
-#     "http://127.0.0.1:3000",
-# ]
 
 CORS_ALLOW_ALL_ORIGINS = True
 
